@@ -8,6 +8,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -59,6 +60,31 @@ abstract class AbstractDokkaTask : DefaultTask() {
      */
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
+
+    /**
+     * File to which the Dokka configuration will be outputted, regardless
+     * of format.
+     * Can be set on a per-task basis.
+     *
+     * The default is `project/buildDir/dokka-config/dokka_parameters.json`, as per Dokkatoo's config.
+     */
+    // TODO: Remove
+    @get:OutputFile
+    @get:Optional
+    abstract val dokkaConfigurationJson: RegularFileProperty
+
+    /**
+     * File to which the Dokka module descriptor will be outputted, regardless
+     * of format.
+     * Can be set on a per-task basis.
+     *
+     * The default is `project/buildDir/dokka-config/module_descriptor.json`, as per Dokkatoo's config.
+     */
+    // TODO: Remove
+    @get:OutputFile
+    @get:Optional
+    abstract val dokkaModuleDescriptorJson: RegularFileProperty
+
 
     /**
      * Configuration for Dokka plugins. This property is not expected to be used directly - if possible, use
@@ -202,8 +228,14 @@ abstract class AbstractDokkaTask : DefaultTask() {
 
     @TaskAction
     internal open fun generateDocumentation() {
+        // Output documentation to config folder
+        val dokkaConfigOutput = dokkaConfigurationJson.get().asFile
+        logger.lifecycle("Writing config to output $dokkaConfigOutput")
+        val dokkaConfig = buildDokkaConfiguration()
+        dokkaConfigOutput.writeText(dokkaConfig.toPrettyJsonString())
+
         DokkaBootstrap(runtime, DokkaBootstrapImpl::class).apply {
-            configure(buildDokkaConfiguration().toCompactJsonString(), createProxyLogger())
+            configure(dokkaConfig.toCompactJsonString(), createProxyLogger())
             val uncaughtExceptionHolder = AtomicReference<Throwable?>()
             /**
              * Run in a new thread to avoid memory leaks that are related to ThreadLocal (that keeps `URLCLassLoader`)
@@ -216,6 +248,14 @@ abstract class AbstractDokkaTask : DefaultTask() {
             }
             uncaughtExceptionHolder.get()?.let { throw it }
         }
+    }
+    
+    internal fun writeModuleDescriptorJson(descriptor: DokkaConfiguration.DokkaModuleDescription) {
+        val dokkaModuleDescOutput = dokkaModuleDescriptorJson.get().asFile
+        logger.lifecycle(
+            "Writing module descriptor for ${moduleName.get()} (${moduleVersion.get()} to output $dokkaModuleDescOutput"
+        )
+        dokkaModuleDescOutput.writeText(descriptor.toPrettyJsonString())
     }
 
     internal abstract fun buildDokkaConfiguration(): DokkaConfigurationImpl

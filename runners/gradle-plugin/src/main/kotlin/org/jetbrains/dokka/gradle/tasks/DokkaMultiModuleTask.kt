@@ -103,7 +103,7 @@ abstract class DokkaMultiModuleTask : AbstractDokkaParentTask() {
                     ),
                     includes = childDokkaTaskIncludes[dokkaTask.path].orEmpty(),
                     sourceOutputDirectory = dokkaTask.outputDirectory.asFile.get(),
-                )
+                ).also { writeModuleDescriptorJson(it) }
             },
             includes = includes.toSet(),
         )

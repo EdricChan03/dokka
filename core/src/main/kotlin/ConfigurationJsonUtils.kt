@@ -33,6 +33,17 @@ fun DokkaConfiguration.toCompactJsonString(): String = serializeAsCompactJson(th
 fun DokkaConfiguration.toPrettyJsonString(): String = serializeAsPrettyJson(this)
 
 /**
+ * Serializes [DokkaConfiguration.DokkaModuleDescription] as a human-readable (pretty printed)
+ * JSON string.
+ *
+ * The returned string will have excessive line breaks and indents, which might not be
+ * desirable when passing this value between API consumers/producers. If you want
+ * a machine-readable and compact json string, see [toCompactJsonString].
+ */
+// TODO: Remove
+fun DokkaConfiguration.DokkaModuleDescription.toPrettyJsonString(): String = serializeAsPrettyJson(this)
+
+/**
  * Serializes a [ConfigurableBlock] as a machine-readable and compact JSON string.
  *
  * The returned string is not very human friendly as it will be difficult to parse by eyes due to it
